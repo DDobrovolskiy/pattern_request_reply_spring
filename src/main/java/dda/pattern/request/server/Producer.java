@@ -17,11 +17,11 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
 @RestController
-@RequestMapping("/send")
+@RequestMapping(value = "/send", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 public class Producer {
 
     @Autowired
-    ReplyingKafkaTemplate<String, Model,Model> kafkaTemplate;
+    ReplyingKafkaTemplate<String, Model,Model> replyingKafkaTemplate;
 
     @Value("${kafka.topic.request-topic}")
     String requestTopic;
@@ -29,14 +29,14 @@ public class Producer {
     @Value("${kafka.topic.requestreply-topic}")
     String requestReplyTopic;
 
-    @PostMapping(value="/sum",produces= MediaType.APPLICATION_JSON_VALUE,consumes=MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping("/sum")
     public Model sum(@RequestBody Model request) throws InterruptedException, ExecutionException {
         // create producer record
         ProducerRecord<String, Model> record = new ProducerRecord<String, Model>(requestTopic, request);
         // set reply topic in header
         record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, requestReplyTopic.getBytes()));
         // post in kafka topic
-        RequestReplyFuture<String, Model, Model> sendAndReceive = kafkaTemplate.sendAndReceive(record);
+        RequestReplyFuture<String, Model, Model> sendAndReceive = replyingKafkaTemplate.sendAndReceive(record);
 
         // confirm if producer produced successfully
         SendResult<String, Model> sendResult = sendAndReceive.getSendFuture().get();
@@ -66,7 +66,7 @@ public class Producer {
         // set reply topic in header
         record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, requestReplyTopic.getBytes()));
         // post in kafka topic
-        RequestReplyFuture<String, Model, Model> sendAndReceive = kafkaTemplate.sendAndReceive(record);
+        RequestReplyFuture<String, Model, Model> sendAndReceive = replyingKafkaTemplate.sendAndReceive(record);
 
         // confirm if producer produced successfully
         SendResult<String, Model> sendResult = sendAndReceive.getSendFuture().get();
